@@ -3,6 +3,14 @@ const schedule = require("node-schedule");
 const nodemailer = require("nodemailer");
 const admin = require("firebase-admin");
 const serviceAccount = require("./posted-1413e-firebase-adminsdk-2g2ut-308e868f58.json");
+
+// dayjs
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
+dayjs.extend(isSameOrAfter);
+dayjs.extend(utc);
+
 const { EMAIL_ADDRESS, EMAIL_PASS } = require("./env");
 
 const app = express();
@@ -13,36 +21,56 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // Post info
-// const docRef = db.collection("posts").doc("DZL3b9ij1vWSZ4d72aa2");
-// docRef
-//   .get()
-//   .then((doc) => {
-//     if (doc.exists) {
-//       console.log("Document data:", doc.data());
-//     } else {
-//       console.log("No such document!");
-//     }
-//   })
-//   .catch((error) => {
-//     console.log("Error getting document:", error);
-//   });
-
-const collectionRef = db.collection("posts");
-
-collectionRef
+const docRef = db.collection("posts").doc("R9VTuJl0hEmJXgl4YrPs");
+docRef
   .get()
-  .then((querySnapshot) => {
-    querySnapshot.forEach((doc) => {
-      console.log("👉", doc.id, "=>", doc.data());
-      console.log("");
-    });
+  .then((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      console.log("Document data:", data);
+
+      const releaseDate = dayjs(data.releaseDate);
+      console.log("Deserialized releaseDate:", releaseDate);
+    } else {
+      console.log("No such document!");
+    }
   })
   .catch((error) => {
-    console.log("Error getting documents:", error);
+    console.log("Error getting document:", error);
   });
 
-const currentDateInUTC = new Date().toUTCString();
-console.log(currentDateInUTC);
+// const collectionRef = db.collection("posts");
+// collectionRef
+//   .get()
+//   .then((querySnapshot) => {
+//     querySnapshot.forEach((doc) => {
+//       console.log("👉", doc.id, "=>", doc.data());
+//       console.log("");
+//     });
+//   })
+//   .catch((error) => {
+//     console.log("Error getting documents:", error);
+//   });
+
+const currentDateUTC = dayjs().utc();
+const date1 = dayjs("2023-10-20T12:00:00Z").utc(); // Replace with your desired date
+// console.log(currentDateUTC);
+
+// if (currentDateUTC.isSameOrAfter(date1)) {
+//   console.log(
+//     "currentDateUTC",
+//     currentDateUTC.format("DD-MM-YY HH:mm:ss"),
+//     "is equal/after than date1",
+//     date1.format("DD-MM-YY HH:mm:ss")
+//   );
+// } else {
+//   console.log(
+//     "currentDateUTC",
+//     currentDateUTC.format(),
+//     " is before date1",
+//     date1.format("DD-MM-YY HH:mm:ss")
+//   );
+// }
 
 // Create a transporter
 const transporter = nodemailer.createTransport({
@@ -212,6 +240,8 @@ function addUserToPosted(user) {
     });
 }
 
+function recordMailInfo(mailID) {}
+
 app.get("/", (req, res) => {
   res.send("Server is running on port 3001");
 });
@@ -230,5 +260,61 @@ https://www.digitalocean.com/community/tutorials/nodejs-cron-jobs-by-examples
 https://reflectoring.io/schedule-cron-job-in-node/
 
 https://www.youtube.com/watch?v=27GoRa4d15c
+
+
+Set Data:
+
+To set data in a Firestore document, If the document does not exist, it will be created; if it does exist, it will be replaced with the new data.
+
+const dataToSet = {
+  title: "Updated Title",
+  content: "Updated Content",
+};
+
+docRef.set(dataToSet)
+  .then(() => {
+    console.log("Document successfully written!");
+  })
+  .catch((error) => {
+    console.error("Error writing document: ", error);
+  });
+
+
+Add Data:
+
+To add data to a Firestore collection, This creates a new document with an automatically generated ID.
+
+const dataToAdd = {
+  title: "New Title",
+  content: "New Content",
+};
+
+db.collection("posts").add(dataToAdd)
+  .then((docRef) => {
+    console.log("Document added with ID: ", docRef.id);
+  })
+  .catch((error) => {
+    console.error("Error adding document: ", error);
+  });
+
+Update Data:
+
+To update data in an existing Firestore document, This will only modify the fields you specify and will not replace the entire document.
+
+const dataToUpdate = {
+  title: "Updated Title",
+};
+
+docRef.update(dataToUpdate)
+  .then(() => {
+    console.log("Document successfully updated!");
+  })
+  .catch((error) => {
+    console.error("Error updating document: ", error);
+  });
+
+const currentDateUTC = dayjs().utc();
+const serializedDate = currentDateUTC.format(); // string format
+const deserializedDate = dayjs(serializedDate);
 
 */
