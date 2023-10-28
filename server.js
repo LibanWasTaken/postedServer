@@ -3,6 +3,7 @@ const schedule = require("node-schedule");
 const nodemailer = require("nodemailer");
 const admin = require("firebase-admin");
 const serviceAccount = require("./posted-1413e-firebase-adminsdk-2g2ut-308e868f58.json");
+const { EMAIL_ADDRESS, EMAIL_PASS } = require("./env");
 
 // dayjs
 const dayjs = require("dayjs");
@@ -11,8 +12,6 @@ const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
 dayjs.extend(isSameOrAfter);
 dayjs.extend(utc);
 
-const { EMAIL_ADDRESS, EMAIL_PASS } = require("./env");
-
 const app = express();
 const port = process.env.PORT || 3001;
 admin.initializeApp({
@@ -20,57 +19,95 @@ admin.initializeApp({
 });
 const db = admin.firestore();
 
-// Post info
-const docRef = db.collection("posts").doc("R9VTuJl0hEmJXgl4YrPs");
-docRef
-  .get()
-  .then((doc) => {
-    if (doc.exists) {
-      const data = doc.data();
-      console.log("Document data:", data);
+// Single Doc info
+function getPostInfo(postID) {
+  const docRef = db.collection("posts").doc(postID);
+  docRef
+    .get()
+    .then((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        const releaseDate = dayjs(data.releaseDate);
+        console.log("Document data:", data);
+        console.log("Deserialized releaseDate:", releaseDate);
+      } else {
+        console.log("No such document!");
+      }
+    })
+    .catch((error) => {
+      console.log("Error getting document:", error);
+    });
+}
 
-      const releaseDate = dayjs(data.releaseDate);
-      console.log("Deserialized releaseDate:", releaseDate);
-    } else {
-      console.log("No such document!");
-    }
-  })
-  .catch((error) => {
-    console.log("Error getting document:", error);
-  });
+// Collection info
+function getPostCollection() {
+  const collectionRef = db.collection("posts");
+  collectionRef
+    .get()
+    .then((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        const postData = doc.data();
+        console.log("");
+        console.log(doc.id);
+        console.log("user:", postData.user);
+        console.log("title:", postData.title, "date:", postData.releaseDate);
 
-// const collectionRef = db.collection("posts");
-// collectionRef
-//   .get()
-//   .then((querySnapshot) => {
-//     querySnapshot.forEach((doc) => {
-//       console.log("👉", doc.id, "=>", doc.data());
-//       console.log("");
-//     });
-//   })
-//   .catch((error) => {
-//     console.log("Error getting documents:", error);
-//   });
+        const emailArray = [];
+        true && emailArray.push("blabla@gmail.com"); //postData.email
+        postData.mail1 && emailArray.push(postData.mail1);
+        postData.mail2 && emailArray.push(postData.mail2);
+        const concatenatedEmails = emailArray.join(", ");
+        console.log("mails:", concatenatedEmails);
 
-const currentDateUTC = dayjs().utc();
-const date1 = dayjs("2023-10-20T12:00:00Z").utc(); // Replace with your desired date
-// console.log(currentDateUTC);
+        if (postData.disabled) {
+          console.log("❌ Disabled");
+        } else {
+          // Checking Date
+          const currentDateUTC = dayjs().utc();
+          const date = dayjs(postData.releaseDate).utc();
 
-// if (currentDateUTC.isSameOrAfter(date1)) {
-//   console.log(
-//     "currentDateUTC",
-//     currentDateUTC.format("DD-MM-YY HH:mm:ss"),
-//     "is equal/after than date1",
-//     date1.format("DD-MM-YY HH:mm:ss")
-//   );
-// } else {
-//   console.log(
-//     "currentDateUTC",
-//     currentDateUTC.format(),
-//     " is before date1",
-//     date1.format("DD-MM-YY HH:mm:ss")
-//   );
-// }
+          console.log(
+            dayjs(postData.releaseDate).utc().format("DD/MM/YYYY HH:mm:ss")
+          );
+          console.log(
+            dayjs(postData.timestamp).utc().format("DD/MM/YYYY HH:mm:ss")
+          );
+          if (currentDateUTC.isSameOrAfter(date)) {
+            console.log(
+              "✅ currentDateUTC",
+              currentDateUTC.format("DD-MM-YY HH:mm:ss"),
+              "equal/after",
+              date.format("DD-MM-YY HH:mm:ss")
+            );
+            // const emailArray = [];
+            // if (true) {
+            //   //postData.email
+            //   emailArray.push("blabla@gmail.com");
+            // }
+            // if (postData.mail1) {
+            //   emailArray.push(postData.mail1);
+            // }
+            // if (postData.mail2) {
+            //   emailArray.push(postData.mail2);
+            // }
+            // const concatenatedEmails = emailArray.join(", ");
+
+            // console.log(concatenatedEmails);
+          } else {
+            console.log(
+              "❌ currentDateUTC",
+              currentDateUTC.format(),
+              "before",
+              date.format("DD-MM-YY HH:mm:ss")
+            );
+          }
+        }
+      });
+    })
+    .catch((error) => {
+      console.log("Error getting documents:", error);
+    });
+}
 
 // Create a transporter
 const transporter = nodemailer.createTransport({
@@ -94,6 +131,22 @@ const transporterTest = nodemailer.createTransport({
 });
 
 // Function to send an email
+function sendEmailAnnoying(count) {
+  const mailOptions = {
+    from: EMAIL_ADDRESS,
+    to: "galang1721@gmail.com",
+    subject: "distracting from ur webinar",
+    text: "bozo ${count}",
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log("Error sending email:", error);
+    } else {
+      console.log("Email sent:", count);
+    }
+  });
+}
 function sendEmail() {
   const mailOptions = {
     from: EMAIL_ADDRESS,
@@ -178,7 +231,7 @@ function sendEmailTest() {
 
 const job = schedule.scheduleJob("1 0 * * *", () => {
   // sendEmail();
-  console.log("mail func running");
+  // console.log("mail func running");
 });
 
 function updatePostDB(postID, userID) {
@@ -213,34 +266,70 @@ function sendPostMail(postIDs) {
   console.log(EMAIL_ADDRESS);
 }
 
-function addUserToPosted(user) {
-  const refToUpdate = db.ref("users/posted/");
-  // add the current time (utc)
-  const now = new Date();
+function movePostToPosted(post) {
+  // Add post to posted
+  // Remove post from posts
+  // Add posted arr with post if in user
+}
 
-  const utcTimeObject = {
-    Year: now.getUTCFullYear(),
-    Month: String(now.getUTCMonth() + 1).padStart(2, "0"), // Month is zero-based
-    Date: String(now.getUTCDate()).padStart(2, "0"),
-    Hour: String(now.getUTCHours()).padStart(2, "0"),
-    Minute: String(now.getUTCMinutes()).padStart(2, "0"),
-    Second: String(now.getUTCSeconds()).padStart(2, "0"),
-    Millisecond: String(now.getUTCMilliseconds()).padStart(3, "0"),
-  };
+// async function movePostToPosted(postID) {
+//   const sourceDocRef = db.collection("posts").doc(postID);
+//   const targetCollectionRef = collection(db, "posted");
+//   try {
+//     const sourceDocSnapshot = await getDoc(sourceDocRef);
+//     if (sourceDocSnapshot.exists()) {
+//       // Copy the data
+//       const data = sourceDocSnapshot.data();
 
-  console.log(utcTimeObject);
+//       // Add the copied data to the target collection
+//       const targetDocRef = await addDoc(targetCollectionRef, data);
 
-  refToUpdate
-    .update(user)
-    .then(() => {
-      console.log("Data updated successfully.");
-    })
-    .catch((error) => {
-      console.error("Error updating data:", error);
-    });
+//       // Delete the document from the source collection
+//       await deleteDoc(sourceDocRef);
+
+//       console.log(`Document moved ${postID}- ${targetDocRef.id}`);
+//     } else {
+//       console.log(`Document ${postID} not found in`);
+//     }
+//   } catch (error) {
+//     console.error("Error moving document:", error);
+//   }
+// }
+
+async function movePostToPosted(postID) {
+  const sourceDocRef = db.collection("posts").doc(postID);
+  const targetDocRef = db.collection("posted").doc(postID);
+
+  try {
+    console.log("Starting");
+    const sourceDocSnapshot = await sourceDocRef.get();
+
+    if (sourceDocSnapshot.exists) {
+      const data = sourceDocSnapshot.data();
+
+      await targetDocRef.set(data);
+      console.log("Copied Post");
+      await sourceDocRef.delete();
+      console.log("Deleted Post");
+
+      console.log(
+        `Document moved from "posts/${postID}" to "posted/${postID}"`
+      );
+    } else {
+      console.log(`Document with ID ${postID} not found in "posts"`);
+    }
+  } catch (error) {
+    console.error("Error moving document:", error);
+  }
 }
 
 function recordMailInfo(mailID) {}
+
+// ======================== Run here:
+
+// getPostInfo("R9VTuJl0hEmJXgl4YrPs")
+// getPostCollection();
+movePostToPosted("test");
 
 app.get("/", (req, res) => {
   res.send("Server is running on port 3001");
