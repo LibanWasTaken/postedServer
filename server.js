@@ -19,6 +19,15 @@ admin.initializeApp({
 });
 const db = admin.firestore();
 
+// Constants
+const etherealAcc = {
+  email: "dustin.lowe83@ethereal.email",
+  pass: "1vTcz3SQwD75EpyJ8F",
+};
+const postLink = "https://postedapp.netlify.app/";
+
+// Functions
+
 // Single Doc info
 function getPostInfo(postID) {
   const docRef = db.collection("posts").doc(postID);
@@ -125,8 +134,8 @@ const transporterTest = nodemailer.createTransport({
   host: "smtp.ethereal.email",
   port: 587,
   auth: {
-    user: "audra.purdy@ethereal.email",
-    pass: "q1JaYNUA9YxDK3GZBg",
+    user: etherealAcc.email,
+    pass: etherealAcc.pass,
   },
 });
 
@@ -163,52 +172,125 @@ function sendEmail() {
     }
   });
 }
-function sendEmailTest() {
+
+function getPostedMailTemplate(postLink) {
+  return {
+    postedMail: {
+      subject: "Posted mail",
+      html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Missed Scheduled Postponement</title>
+          <style>
+              /* Add your CSS styles here */
+              div {
+                  margin: 1rem;
+                  font-style: italic;
+                  margin-right: 1rem;
+                  padding: 1rem;
+                  border-left: 5px solid #ccc;
+              }
+              button {
+                  background: black;
+                  padding: 1rem 1.5rem;
+                  color: white;
+                  border: none;
+                  outline: none;
+                  letter-spacing: 1px;
+                  text-transform: uppercase;
+                  text-decoration: none;
+                  margin-top: 2rem;
+              }
+              button:hover {
+                background: #111;
+            }
+          </style>
+      </head>
+      <body>
+          <p>Hello,</p>
+          <br />
+          <p>This automated email has been configured by <strong>Liban</strong> to be dispatched in the event of a missed scheduled postponement.</p>
+          <p>Referring to the message below:</p>
+          <div>Yeah Hello it is I</div>
+          <br />
+          <p>Find the rest here:</p>
+          <button onclick="window.open('${postLink}', '_blank')">Post</button>
+          <p>or here: <a href="${postLink}" target="_blank">link/postID</a></p>
+
+          <br />
+          <p>- Posted</p>
+      </body>
+      </html>
+      `,
+    },
+  };
+}
+function getPostWarningMailTemplate(postLink) {
+  return {
+    postedMail: {
+      subject: "Warning Posted mail",
+      html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Missed Scheduled Postponement</title>
+          <style>
+              /* Add your CSS styles here */
+              div {
+                  margin: 1rem;
+                  font-style: italic;
+                  margin-right: 1rem;
+                  padding: 1rem;
+                  border-left: 5px solid #ccc;
+              }
+              button {
+                  background: black;
+                  padding: 1rem 1.5rem;
+                  color: white;
+                  border: none;
+                  outline: none;
+                  letter-spacing: 1px;
+                  text-transform: uppercase;
+                  text-decoration: none;
+                  margin-top: 2rem;
+              }
+              button:hover {
+                background: #111;
+            }
+          </style>
+      </head>
+      <body>
+          <p>Hello,</p>
+          <br />
+          <p>This automated email, configured by <strong>Liban</strong>, was set to be dispatched when uhh.. yk.</p>
+          <br />
+          <p>To delay or disable the post click here:</p>
+          <button onclick="window.open('${postLink}', '_blank')">Post</button>
+          <p>or here: <a href="${postLink}" target="_blank">link/postID</a></p>
+          <br />
+          <p>If not, ignore this email.</p>
+          <p>- Posted</p>
+      </body>
+      </html>
+      `,
+    },
+  };
+}
+
+// FIXME: button doesnt work, href doesnt open in new tab
+
+function sendEmailTest(emailValues, subjectValue = "Posted", htmlValue) {
+  console.log("sending to:", emailValues);
   const mailOptions = {
     from: EMAIL_ADDRESS,
-    to: "audra.purdy@ethereal.email",
-    subject: "Daily Email",
-    html: `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Missed Scheduled Postponement</title>
-        <style>
-            /* Add your CSS styles here */
-            div {
-                margin: 1rem;
-                font-style: italic;
-                margin-right: 1rem;
-                padding: 1rem;
-                border-left: 5px solid #ccc;
-            }
-            button {
-                background: black;
-                padding: 1rem 1.5rem;
-                color: white;
-                border: none;
-                outline: none;
-                letter-spacing: 2px;
-                text-transform: uppercase;
-                margin-top: 2rem;
-            }
-        </style>
-    </head>
-    <body>
-        <p>Hello,</p>
-        <br />
-        <p>This automated email has been configured by <strong>Liban</strong> to be dispatched in the event of a missed scheduled postponement.</p>
-        <br />
-        <p>Referring to the message below:</p>
-        <div>Yeah Hello it is I</div>
-        <br />
-        <p>Find the rest here:</p>
-        <button>Posted</button>
-    </body>
-    </html>
-`,
+    to: emailValues,
+    subject: subjectValue,
+    html: htmlValue,
   };
 
   transporterTest.sendMail(mailOptions, (error, info) => {
@@ -266,36 +348,6 @@ function sendPostMail(postIDs) {
   console.log(EMAIL_ADDRESS);
 }
 
-function movePostToPosted(post) {
-  // Add post to posted
-  // Remove post from posts
-  // Add posted arr with post if in user
-}
-
-// async function movePostToPosted(postID) {
-//   const sourceDocRef = db.collection("posts").doc(postID);
-//   const targetCollectionRef = collection(db, "posted");
-//   try {
-//     const sourceDocSnapshot = await getDoc(sourceDocRef);
-//     if (sourceDocSnapshot.exists()) {
-//       // Copy the data
-//       const data = sourceDocSnapshot.data();
-
-//       // Add the copied data to the target collection
-//       const targetDocRef = await addDoc(targetCollectionRef, data);
-
-//       // Delete the document from the source collection
-//       await deleteDoc(sourceDocRef);
-
-//       console.log(`Document moved ${postID}- ${targetDocRef.id}`);
-//     } else {
-//       console.log(`Document ${postID} not found in`);
-//     }
-//   } catch (error) {
-//     console.error("Error moving document:", error);
-//   }
-// }
-
 async function movePostToPosted(postID) {
   const sourceDocRef = db.collection("posts").doc(postID);
   const targetDocRef = db.collection("posted").doc(postID);
@@ -329,7 +381,15 @@ function recordMailInfo(mailID) {}
 
 // getPostInfo("R9VTuJl0hEmJXgl4YrPs")
 // getPostCollection();
-movePostToPosted("test");
+// movePostToPosted("test");
+
+// const mailTemplates = getPostedMailTemplate(postLink);
+const mailTemplates = getPostWarningMailTemplate(postLink);
+sendEmailTest(
+  etherealAcc.email,
+  mailTemplates.postedMail.subject,
+  mailTemplates.postedMail.html
+);
 
 app.get("/", (req, res) => {
   res.send("Server is running on port 3001");
