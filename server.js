@@ -283,6 +283,8 @@ function getPostWarningMailTemplate(postLink) {
 }
 
 // FIXME: button doesnt work, href doesnt open in new tab
+// TODO: after mail sent, add post.warned = true, then the next time
+// TODO: i dont think moving a collection moves it sub collection too
 
 function sendEmailTest(emailValues, subjectValue = "Posted", htmlValue) {
   console.log("sending to:", emailValues);
@@ -351,7 +353,7 @@ function sendPostMail(postIDs) {
 async function movePostToPosted(postID) {
   const sourceDocRef = db.collection("posts").doc(postID);
   const targetDocRef = db.collection("posted").doc(postID);
-
+  // TODO: add current time + post.likes?
   try {
     console.log("Starting");
     const sourceDocSnapshot = await sourceDocRef.get();
